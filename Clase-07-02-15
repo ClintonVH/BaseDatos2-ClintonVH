@@ -1,0 +1,35 @@
+--crear tabla
+CREATE TABLE usuario_xxx (id_usuario INTEGER, login VARCHAR2(120), edad INTEGER, CONSTRAINT pk_id_usuario PRIMARY KEY(id_usuario));
+--crear secuencia
+
+CREATE sequence sec_usuario_xxx
+start with 1
+increment by 1
+nomaxvalue;
+/*
+crear procedimiento almacenado (Store Precedures) guardar_usuario_xxx
+NoTA: si la edad que   es menor de 18 que marque error y que impide inserccion
+*/
+
+CREATE OR REPLACE PROCEDURE guardar_usuario_xxx(my_id OUT INTEGER, my_login IN VARCHAR2, my_edad IN INTEGER) 
+AS
+BEGIN
+IF my_edad > 18 THEN
+SELECT sec_usuario_xxx.nextVAL into my_id FROM dual;
+INSERT INTO usuario_xxx (id_usuario, login, edad) VALUES (my_id, my_login,my_edad);
+ELSE
+RAISE_APPLICATION_ERROR(-20001,'Lo siento pequeño no puedes entrar');
+END IF;
+END;
+/
+--habilitar la salida de texto
+SET SERVEROUTPUT ON;
+--Ingresar datos en la tabla usuario_xxx
+DECLARE 
+valor integer;
+BEGIN
+  guardar_usuario_xxx(valor,'perverso2', 10);
+  DBMS_OUTPUT.PUT_LINE('Ya te registramos con el numero de id: ' || valor);
+END;
+/
+SELECT * FROM usuario_xxx;
