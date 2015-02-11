@@ -1,0 +1,112 @@
+SET SERVEROUTPUT ON ;
+--crear tabla pelicula
+CREATE TABLE pelicula (id_pelicula INTEGER, titulo VARCHAR(180), sinopsis VARCHAR2(400),
+CONSTRAINT pk_id_pelicula 
+PRIMARY KEY(id_pelicula));
+--crear tabla sala
+CREATE TABLE sala (id_sala INTEGER, id_pelicula INTEGER, numero_asientos INTEGER, 
+CONSTRAINT pk_id_sala PRIMARY KEY(id_sala), CONSTRAINT fk_id_pelicula FOREIGN KEY(id_pelicula) REFERENCES pelicula (id_pelicula));
+--crear secuencia para la tabla pelicula
+CREATE SEQUENCE sec_pelicula
+start with 1
+increment by 1
+nomaxvalue;
+--crear secuencia para la tabla sala
+CREATE SEQUENCE sec_sala
+start with 1
+increment by 1
+nomaxvalue;
+--crear procedimiento almacenado para guardar en pelicula guardar_pelicula
+CREATE OR REPLACE PROCEDURE guardar_pelicula(my_id OUT INTEGER, peli IN VARCHAR2, sinop IN VARCHAR2)AS
+BEGIN
+SELECT sec_pelicula.nextval into my_id from dual;
+INSERT INTO pelicula (ID_PELICULA, TITULO, SINOPSIS) VALUES (my_id, peli, sinop);
+END;
+/
+--Ingresar tres datos dentro de la tabla pelicula
+DECLARE
+IDE INTEGER;
+BEGIN
+guardar_pelicula(IDE, 'Superman', 'Es una pelicula de ciencia ficcion muy buena');
+DBMS_OUTPUT.PUT_LINE('Se guardo con exito con el id: ' || IDE);
+END;
+/
+DECLARE
+IDE INTEGER;
+BEGIN
+guardar_pelicula(IDE, 'Harry Ptter 1', 'Es una pelicula de magos muy buena');
+DBMS_OUTPUT.PUT_LINE('Se guardo con exito con el id: ' || IDE);
+END;
+/
+DECLARE
+IDE INTEGER;
+BEGIN
+guardar_pelicula(IDE, 'Avatar', 'Es una pelicula de animacion muy mala');
+DBMS_OUTPUT.PUT_LINE('Se guardo con exito con el id: ' || IDE);
+END;
+/
+--consulta de pelicula 
+SELECT * FROM pelicula;
+--crear procedimiento almacenado para guardar en sala guardar_sala
+CREATE OR REPLACE PROCEDURE guardar_sala(my_id OUT INTEGER, peli IN INTEGER, num_asientos IN INTEGER)AS
+BEGIN
+SELECT sec_sala.nextval into my_id from dual;
+INSERT INTO sala (id_sala, id_pelicula, numero_asientos) VALUES(my_id, peli, num_asientos);
+END;
+/
+--Ingresar tres datos dentro de la tabla sala
+DECLARE
+IDE INTEGER;
+BEGIN
+guardar_sala(IDE, 1, 10);
+DBMS_OUTPUT.PUT_LINE('Se guardo con exito con el id: ' || IDE);
+END;
+/
+DECLARE
+IDE INTEGER;
+BEGIN
+guardar_sala(IDE, 2, 10);
+DBMS_OUTPUT.PUT_LINE('Se guardo con exito con el id: ' || IDE);
+END;
+/
+DECLARE
+IDE INTEGER;
+BEGIN
+guardar_sala(IDE, 3, 10);
+DBMS_OUTPUT.PUT_LINE('Se guardo con exito con el id: ' || IDE);
+END;
+/
+--consulta de la tabla sala
+SELECT * FROM sala;
+--crear procedimiento almacenado para comprar boletos comprar_boletos 
+--Problema de sintaxis segun el compilador en el where del udate
+CREATE OR REPLACE PROCEDURE comprar_boletos (titulo IN VARCHAR2, num_sala IN INTEGER, asientos_compra IN INTEGER)
+AS
+
+total_asientos INTEGER;
+CURSOR cursor_sala IS SELECT id_sala, numero_asientos FROM sala;
+BEGIN
+ FOR rec IN cursor_sala loop
+  IF num_sala = cursor_sala.id_sala THEN
+     IF asienos_compra <= cursor_sala.numero_asientos THEN
+         total_asientos:=asientos_compra - cursor_sala.numero_asientos; 
+         UPDATE sala 
+         SET total_asientos
+         WHERE cursor_sala.id_sala = num_sala;
+         dbms_output.put_line('su compra fue satisfactoria, que disfrutes de tu pelicula ' || titulo);
+     ELSE
+         RAISE_APPLICATION_ERROR(-20002,'Lo siento, no contamos con los suficientes asietos');
+     END IF;
+  ELSE
+     RAISE_APPLICATION_ERROR(-20001,'Lo siento la sala que elegiste no existe');
+  END IF;
+ END LOOP; 
+dbms_output.put_line('hola');
+END;
+/
+--hacer prueba
+begin
+comprar_boletos('Superman',1,5);
+dbms_output.put_line('Procesando compra...');
+End;
+/
