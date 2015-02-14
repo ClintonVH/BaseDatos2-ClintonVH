@@ -1,1 +1,77 @@
-los trollie XD
+--@Author: Clinton Vazquez Hermosillo
+/*
+Relecionar campos de tablas a variables en pl squl (INTRODUCCION A CURSORES)
+
+  1. Relacion de una sola ocurrencia: Para ello se ocupa el SELECT tu_columna INTO yu_variable_local FROM tu_tabla WHERE id=tu_id
+  2. Relacion con multiples ocurrencias (CURSORES) CURSOR tu_nombre IS SELECT * FROM sala
+*/
+--@Author: Clinton Vazquez Hermosillo
+--1. Crear una tabla empleado
+CREATE TABLE empleado (id INTEGER, nombre VARCHAR2(120), sueldo FLOAT);
+--2. Insertar 5 registros con id consecutivo del 1 al 5 con el nombre que querramos y sueldo entre 2000 y 10000
+INSERT INTO empleado (id, nombre, sueldo) VALUES (1,'MANUEL',2500);
+INSERT INTO empleado (id, nombre, sueldo) VALUES (2,'PEPE',8600);
+INSERT INTO empleado (id, nombre, sueldo) VALUES (3,'TOÑO',10000);
+INSERT INTO empleado (id, nombre, sueldo) VALUES (4,'SAUL',6000);
+INSERT INTO empleado (id, nombre, sueldo) VALUES (5,'ALFREDO',4200);
+--Comprobar que esten los registros
+SELECT * FROM empleado;
+--@Author: Clinton Vazquez Hermosillo
+/*
+//////////////////////// OCURRENCIA UNICA /////////////////////
+  3. Crear un bloque pl squl para que al registro cuyo id sea igual a 2 sumarle la cantidad de 10000
+*/
+--@Author: Clinton Vazquez Hermosillo
+set serveroutput on;
+declare
+nuevo_sueldo float;
+begin
+SELECT sueldo INTO nuevo_sueldo FROM empleado WHERE id=2;
+dbms_output.put_line('El sueldo seleccionado es: ' || nuevo_sueldo);
+nuevo_sueldo:= nuevo_sueldo + 10000;
+UPDATE empleado SET sueldo = nuevo_sueldo WHERE id=2;
+dbms_output.put_line('El sueldo nuevo es: ' || nuevo_sueldo);
+end;
+/
+--@Author: Clinton Vazquez Hermosillo
+/*
+/////////////////////// CURSOR EXPLICITO ///////////////////////////
+
+*/
+DECLARE 
+    CURSOR cursor_empleado IS SELECT * FROM empleado;
+BEGIN
+FOR registro IN cursor_empleado LOOP
+dbms_output.put_line('mensaje ' || registro.id || ' ' || registro.nombre || ' ' || registro.sueldo);
+END LOOP;
+END;
+/
+--@Author: Clinton Vazquez Hermosillo
+/* crear un procedimiento que genere un reporte que muestre el nombre su sueldo y cuanto seria su salario + n porciento
+donde n es un argumento de entrada de 0 - 100 si no que mande un error que tiene que ser entre 0 y 100 entregar a la 1 am del sabado
+*/
+--@Author: Clinton Vazquez Hermosillo
+CREATE OR REPLACE PROCEDURE reporte_sueldo(aumento IN INTEGER)AS
+CURSOR c_empleado IS SELECT * FROM empleado;
+porcentaje FLOAT;
+total FLOAT;
+BEGIN
+IF aumento >100 OR aumento < 0 THEN
+RAISE_APPLICATION_ERROR(-20001,'ERROR, DEBES INTRODUCIR UN PORCENTAJE DENTRO DEL RANGO DE 0 A 100');
+ELSE
+porcentaje:= aumento/100;
+dbms_output.put_line('|  NOMBRE  |  SUELDO  |   SUELDO (+' || aumento || '%)   |');
+FOR registro IN c_empleado LOOP
+total := (registro.sueldo * porcentaje) + registro.sueldo;
+dbms_output.put_line(registro.nombre || '   |   ' || registro.sueldo || '   |   ' || total ); 
+END LOOP;
+END IF;
+END;
+/
+--@Author: Clinton Vazquez Hermosillo
+set serveroutput on;
+begin
+reporte_sueldo(15);
+end;
+/
+
