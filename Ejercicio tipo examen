@@ -1,0 +1,103 @@
+-- 1. crear las siguentes tablas y sus secuencias
+CREATE TABLE customer (customer_id integer, name varchar2(80),phone_number varchar2(70), constraint pk_customer_id primary key(customer_id));
+CREATE SEQUENCE sec_customer
+start with 1
+increment by 1
+nomaxvalue;
+CREATE TABLE orden (orden_id integer, customer_id integer, total float, constraint pk_orden_id primary key (orden_id),constraint fk_customer_id foreign key (customer_id) REFERENCES customer(customer_id));
+CREATE SEQUENCE sec_orden
+start with 1
+increment by 1
+nomaxvalue;
+/* 2. crear un bloque pl/sql que genere 10 customers, cuyo nombre conste de 8 caracteres asignados arbitriariamente usar la funcion DBMS_RANDOM.STRING('L',8)
+PARA GENERAR LOS NOMBRES DEJAR EL CAMPO PHONE_NUMBER CON EL VALOR 01-800-XXX
+*/
+set serveroutput on;
+CREATE OR REPLACE PROCEDURE guardar_customer
+AS
+nombre varchar2(80);
+tel varchar2(70);
+myid integer;
+BEGIN
+for i in 1..10 loop
+SELECT sec_customer.nextval INTO myid FROM DUAL;
+nombre:= dbms_random.string('l',8);
+tel:= dbms_random.value(100,999);
+tel:=round(tel);
+tel:= ('01-800-'||tel);
+INSERT INTO customer (customer_id, name, phone_number) Values (myid,nombre,tel);
+end loop;
+END;
+/
+---------------
+BEGIN
+guardar_customer();
+END;
+/
+SELECT * FROM customer;
+/* 3.Crear un bloque pl/sql que genere por cada customer de la tabla anterior 3 ordenes, cada orden debe tener un total generado aleatoriamente en un rango de 120 a 600, redendeados a enteros 
+para ello usar las funciones dbms_random.value(120,600) y la funcion round(valor) para redondear
+*/
+CREATE OR REPLACE PROCEDURE guardar_orden
+AS
+customer_id integer;
+total float;
+myid integer;
+BEGIN
+customer_id:=1;
+FOR customer_id in 1..10 loop
+FOR i in 1..3 loop
+total:=dbms_random.value(120,600);
+total:=round(total);
+SELECT sec_orden.nextval INTO myid FROM DUAL;
+INSERT INTO orden (orden_id, customer_id, total) VALUES (myid,customer_id,total);
+end loop;
+end loop;
+END;
+/
+--------------
+BEGIN
+guardar_orden;
+END;
+/
+select * from orden;
+/* 4. Crear un procedimiento alamcanado que se llame corte_de_caja "que no contenga ningun parametro ni de entrada ni de salida"
+          > debe realizar lo siguente: generar un reporte de ventas, con los siguentes datos: | nombre del cliente | consumo total | total con descuento |
+          en la columna % de descuento debe aplicar la siguente logica:
+          si el consumo total es < 900 se debe aplicar un descuento del 10%, si el consumo es >=900 se debe aplicar un descuento del 20%
+*/
+CREATE OR REPLACE PROCEDURE corte_caja
+AS
+aux integer;
+suma integer;
+total integer;
+mynombre varchar2(80);
+mycustomer_id integer;
+CURSOR c_orden IS SELECT * FROM orden;
+BEGIN
+aux:=0;
+suma:=0;
+SELECT count(name) into aux FROM customer;
+dbms_output.put_line('|   Nombre   | consumo total | total con descuento |');
+mycustomer_id := 1;
+for mycustomer_id in 1..aux loop
+for reg in c_orden loop
+if reg.customer_id = mycustomer_id then
+SELECT name into mynombre From customer WHERE customer_id = mycustomer_id;
+suma  := suma + reg.total;
+if suma < 900 then
+total:= suma - (suma * 0.1);
+else
+total:= suma - (suma * 0.2);
+end if;
+end if;
+end loop;
+dbms_output.put_line('|  '|| mynombre  ||'  |  '|| suma ||'   |  '|| total ||'   |');
+suma:=0;
+end loop;
+end;
+/
+BEGIN
+corte_caja;
+END;
+/
