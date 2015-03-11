@@ -1,0 +1,109 @@
+CREATE TABLE trabajador
+  (
+    id_trabajador INTEGER,
+    nombre        VARCHAR2(80),
+    puesto        VARCHAR2(80),
+    CONSTRAINT trabajador_pk PRIMARY KEY (id_trabajador)
+  );
+CREATE SEQUENCE sec_trabajador start with 1 increment BY 1 nomaxvalue;
+  CREATE TABLE honorarios
+    (
+      id_honorarios INTEGER,
+      id_trabajador INTEGER,
+      subtotal FLOAT,
+      iva FLOAT,
+      ret_iva FLOAT,
+      isr FLOAT,
+      total_pagar FLOAT,
+      CONSTRAINT honorarios_pk PRIMARY KEY (id_honorarios),
+      CONSTRAINT honorarios_fk FOREIGN KEY (id_trabajador) REFERENCES trabajador(id_trabajador)
+    );
+CREATE SEQUENCE sec_honorarios start with 1 increment BY 1 nomaxvalue;
+CREATE OR REPLACE PROCEDURE guardar_trabajador
+AS
+  myid INTEGER;
+BEGIN
+  SELECT sec_trabajador.nextval INTO myid FROM dual;
+  INSERT
+  INTO trabajador
+    (
+      id_trabajador,
+      nombre,
+      puesto
+    )
+    VALUES
+    (
+      myid,
+      dbms_random.string('l',8),
+      'Programador'
+    );
+END;
+/
+CREATE OR REPLACE PROCEDURE guardar_honorarios
+  (
+    trabajador_id IN INTEGER,
+    mysubtotal    IN FLOAT
+  )
+AS
+  myid INTEGER;
+BEGIN
+  SELECT sec_honorarios.nextval INTO myid FROM dual;
+  INSERT
+  INTO honorarios
+    (
+      id_honorarios,
+      id_trabajador,
+      subtotal
+    )
+    VALUES
+    (
+      myid,
+      trabajador_id,
+      mysubtotal
+    );
+END;
+/
+declare
+subtotal integer;
+begin
+subtotal:=100;
+for i in 1..300 loop
+guardar_trabajador();
+guardar_honorarios(i,subtotal);
+subtotal:=subtotal+100;
+end loop;
+end;
+/
+set serveroutput on;
+select * from trabajador;
+select * from honorarios;
+create or replace procedure cuatro_ex as
+cursor cur_ex is select * from honorarios for update;
+myiva float;
+myret_iva float;
+myisr float;
+mytotal float;
+mynombre varchar2(80);
+mypuesto varchar2(80);
+begin
+dbms_output.put_line('| nombre     |   puesto    | total a pagar  |');
+for reg in cur_ex loop
+-------------- acualizar ------------
+myiva:=reg.subtotal * 0.16;
+myret_iva:= myiva/3;
+myisr:=reg.subtotal *0.10;
+mytotal:=reg.subtotal+myret_iva-myiva-myisr;
+update honorarios set iva=myiva, ret_iva=myret_iva, isr=myisr, total_pagar=mytotal where current of cur_ex;
+end loop;
+for reg in cur_ex loop
+------------imprimir reporte ---------
+select nombre into mynombre from trabajador where id_trabajador =reg.id_trabajador;
+select puesto into mypuesto from trabajador where id_trabajador =reg.id_trabajador; 
+dbms_output.put_line('|  '|| mynombre   ||'  | '||  mypuesto ||  ' | ' || reg.total_pagar ||'  |');
+end loop;
+end;
+/
+begin
+cuatro_ex();
+end;
+/
